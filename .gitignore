@@ -75,3 +75,7 @@ package-lock.json
 # Web (if any)
 dist/
 .cache/
+
+# Python cache
+__pycache__/
+*.pyc
