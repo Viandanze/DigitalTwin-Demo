@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Arduino (build artifacts)
+Arduino/libraries/
+Arduino/build/
+
+# MQTT simulator output
+*_output/
+simulation_data/
+
+# Database files (optional, may contain runtime data)
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Environment variables and secrets
+.env
+.env.*
+config/secrets.yaml
+config/api_keys.yaml
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Node.js (if using node-based tools)
+node_modules/
+package-lock.json
+
+# Web (if any)
+dist/
+.cache/
