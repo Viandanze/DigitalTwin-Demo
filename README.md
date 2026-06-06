@@ -1,141 +1,111 @@
-# DigitalTwin_Demo
+# DigitalTwin-Demo
 
-工业设备数字孪生系统。
+Industrial equipment digital twin system with real-time sensor data acquisition, MQTT communication, 3D visualization, and PID closed-loop control.
 
-软硬件结合的项目：Three.js 做 3D 可视化，MQTT 通信，Arduino 采集传感器数据，最终实现闭环控制。
+## Tech Stack
 
-## 这项目是干嘛的
+- **Frontend:** Three.js + JavaScript
+- **Backend:** Python 3.8+ (FastAPI/Flask)
+- **Protocol:** MQTT (Eclipse Mosquitto)
+- **Hardware:** Arduino + sensor suite
+- **Storage:** SQLite
 
-简单说就是给工业设备建一个实时同步的数字副本。物理世界的传感器数据采集上来，通过 MQTT 传送到数字世界，Three.js 渲染出设备的实时状态，控制引擎根据数据计算控制指令，再下发执行。
+Hardware: Raspberry Pi 5 + Arduino UNO R3 + sensor suite (temperature/pressure/position)
 
-目前能跑起来的核心功能：
-- 传感器数据采集（温度、压力、位置）
-- MQTT 实时通信
-- 3D 可视化渲染（PBR 材质）
-- PID 闭环控制
-- 执行器控制（直流电机、舵机、步进电机）
-
-## 技术栈
-
-- 前端：Three.js + JavaScript
-- 后端：Python 3.8+（FastAPI/Flask）
-- 通信协议：MQTT（Eclipse Mosquitto）
-- 硬件：Arduino + 传感器套件
-- 状态存储：SQLite
-
-硬件环境：树莓派 5 + Arduino UNO R3 + 传感器套件（温度/压力/位置传感器）
-
-## 系统架构
+## System Architecture
 
 ```
-传感器 → Arduino → 串口 → Python 桥接程序 → MQTT Broker → 控制引擎
+Sensor → Arduino → Serial → Python Bridge → MQTT Broker → Control Engine
                                                       ↓
-                                           Web (Three.js) ← 实时渲染设备状态
+                                           Web (Three.js) ← Real-time rendering
 ```
 
-数据流向：
-1. Arduino 读取传感器数据
-2. Python 通过串口接收数据
-3. 数据发布到 MQTT Broker
-4. 控制引擎订阅传感器 topic
-5. PID 控制器计算控制量
-6. 控制指令发布到执行器 topic
-7. Arduino 接收指令调整电机
-8. Three.js 渲染最新状态
+Data flow:
+1. Arduino reads sensor data
+2. Python receives data via serial port
+3. Data published to MQTT Broker
+4. Control engine subscribes to sensor topics
+5. PID controller computes control output
+6. Control commands published to actuator topics
+7. Arduino receives commands and adjusts motors
+8. Three.js renders latest state
 
-## 怎么跑起来
+## Quick Start
 
-### 环境要求
+### Prerequisites
 
 - Python 3.8+
 - Arduino IDE
-- MQTT Broker（Eclipse Mosquitto）
+- MQTT Broker (Eclipse Mosquitto)
 
-### 安装
+### Installation
 
 ```bash
-git clone https://github.com/Viandanze/DigitalTwin_Demo.git
-cd DigitalTwin_Demo
+git clone https://github.com/Viandanze/DigitalTwin-Demo.git
+cd DigitalTwin-Demo
 
 pip install paho-mqtt pyserial flask fastapi
 
-# Arduino 库（通过 Arduino IDE Library Manager 安装）
+# Arduino libraries (via Arduino IDE Library Manager)
 # - PubSubClient
 # - ArduinoJson
 ```
 
-### 启动顺序
+### Startup Sequence
 
 ```bash
-# 终端 1: 启动 MQTT broker
+# Terminal 1: Start MQTT broker
 mosquitto -v
 
-# 终端 2: 启动串口桥接程序
-python src/串口通信/arduino_bridge.py
+# Terminal 2: Start serial bridge
+python src/serial_comm/arduino_bridge.py
 
-# 终端 3: 如果没有硬件，先跑模拟器测试
+# Terminal 3: Run simulator (if no hardware)
 python src/mqtt_simulator/mqtt_simulator.py
 
-# 终端 4: 启动控制引擎
-python src/执行器集成/control_main.py
+# Terminal 4: Start control engine
+python src/actuator_integration/control_main.py
 
-# 打开浏览器访问 src/index.html
+# Open browser to src/index.html
 ```
 
-## 项目结构
+## Project Structure
 
 ```
-DigitalTwin_Demo/
+DigitalTwin-Demo/
 ├── src/
-│   ├── Arduino/                    # Arduino 固件
-│   ├── 传感器采集/                 # 传感器数据采集
-│   ├── 串口通信/                   # 串口通信模块
-│   ├── 云端同步/                   # MQTT 客户端
-│   ├── 执行器集成/                 # PID 控制器
-│   ├── 电机控制/                   # 电机驱动
-│   ├── 闭环测试/                   # 闭环测试代码
-│   ├── 系统联调/                   # 系统集成
-│   └── mqtt_simulator/            # MQTT 模拟器
-└── web/                           # 前端
-    └── index.html                 # Three.js 3D 可视化
+│   ├── Arduino/                    # Arduino firmware
+│   ├── sensor_acquisition/         # Sensor data collection
+│   ├── serial_comm/                # Serial communication
+│   ├── cloud_sync/                 # MQTT client
+│   ├── actuator_integration/       # PID controller
+│   ├── motor_control/              # Motor drivers
+│   ├── closed_loop_test/           # Closed-loop testing
+│   ├── system_integration/         # System integration
+│   └── mqtt_simulator/            # MQTT simulator
+└── web/                           # Frontend
+    └── index.html                 # Three.js 3D visualization
 ```
 
-## MQTT Topic 结构
+## MQTT Topics
 
 ```
 digital_twin/
 ├── sensors/
-│   ├── temperature     # 温度
-│   ├── position        # 位置
-│   └── status          # 系统状态
+│   ├── temperature
+│   ├── position
+│   └── status
 ├── actuators/
-│   ├── motor_speed     # 电机 PWM 控制
-│   └── servo_angle     # 舵机角度
+│   ├── motor_speed
+│   └── servo_angle
 └── system/
-    ├── state           # 整体状态
-    └── alerts          # 告警消息
+    ├── state
+    └── alerts
 ```
 
-## 面试能聊的点
+## Known Issues
 
-- 完整软硬件系统集成能力
-- 实时系统：亚秒级延迟数据处理
-- MQTT 协议设计：topic 结构、payload 设计
-- PID 控制理论实践
-- Three.js 场景管理、材质、灯光
-- Python 异步编程、串口通信
-- 多组件系统调试经验
-
-## 已知问题
-
-- **缺少 Three.js 前端主页面**：项目里的 `src/` 下只有后端 Python 代码和 Arduino 固件，Three.js 3D 可视化主页面（index.html）尚未上传。README 中提到的"打开浏览器访问 src/index.html"目前不可用。后端部分（MQTT 通信、串口桥接、控制引擎、模拟器）都可以正常运行。
-
-## 当前状态
-
-核心后端功能已完成，3D 前端可视化待补充。持续迭代中，后续计划：
-- 加入 LLM Agent 能力（自然语言控制）
-- 预测性维护模块
-- 云端部署
+- **Missing Three.js frontend**: The `src/` directory currently contains only backend Python code and Arduino firmware. The Three.js 3D visualization page (`index.html`) has not been uploaded yet. All backend components (MQTT communication, serial bridge, control engine, simulator) are fully functional.
 
 ## License
 
