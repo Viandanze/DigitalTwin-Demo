@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DigitalTwin-Demo | 3D Viewer</title>
+<style>
+  :root {
+    --bg:       #0a0e17;
+    --panel:    #111827;
+    --card:     #1a2332;
+    --border:   #2a3a4e;
+    --accent:   #3b82f6;
+    --accent2:  #10b981;
+    --warn:     #f59e0b;
+    --danger:   #ef4444;
+    --text:     #e2e8f0;
+    --muted:    #94a3b8;
+    --dim:      #64748b;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  /* ── Top Bar ── */
+  .topbar {
+    height: 48px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  .topbar .logo {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+  .topbar h1 {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .topbar .status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+  .topbar .status .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+  }
+  /* ── Main Layout ── */
+  .main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+  /* ── Side Panel (shared) ── */
+  .panel {
+    width: 260px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel.right {
+    border-right: none;
+    border-left: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted);
+    padding: 16px 16px 8px;
+  }
+  /* ── Sensor Card ── */
+  .sensor-card {
+    margin: 6px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    transition: border-color 0.3s;
+  }
+  .sensor-card:hover { border-color: var(--accent); }
+  .sensor-card .label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  .sensor-card .value {
+    font-size: 26px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .sensor-card .unit {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--muted);
+    margin-left: 3px;
+  }
+  .sensor-card .bar-wrap {
+    margin-top: 8px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .sensor-card .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+  /* ── Control Card ── */
+  .ctrl-card {
+    margin: 6px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .ctrl-card .label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .ctrl-card .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+  .ctrl-card .val {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .ctrl-card .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .tag.on  { background: rgba(16,185,129,0.15); color: var(--accent2); }
+  .tag.off { background: rgba(239,68,68,0.15);  color: var(--danger); }
+  .tag.auto{ background: rgba(59,130,246,0.15);  color: var(--accent); }
+  .tag.idle{ background: rgba(100,116,139,0.2);  color: var(--dim); }
+  /* ── 3D Viewport ── */
+  .viewport {
+    flex: 1;
+    position: relative;
+    background: var(--bg);
+  }
+  .viewport canvas { display: block; }
+  .viewport .overlay {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    font-size: 11px;
+    color: var(--dim);
+    pointer-events: none;
+  }
+  .viewport .fps {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 11px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+  }
+  /* ── MQTT Log ── */
+  .mqtt-log {
+    margin: 6px 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    max-height: 160px;
+    overflow-y: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 10.5px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+  .mqtt-log .t { color: var(--dim); margin-right: 6px; }
+  .mqtt-log .topic { color: var(--accent); }
+  .mqtt-log .payload { color: var(--accent2); }
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ Top Bar ═══════════ -->
+<div class="topbar">
+  <div class="logo"></div>
+  <h1>DigitalTwin-Demo</h1>
+  <div class="status">
+    <div class="dot"></div>
+    <span>MQTT Connected</span>
+  </div>
+</div>
+
+<!-- ═══════════ Main ═══════════ -->
+<div class="main">
+
+  <!-- ── Left Panel: Sensors ── -->
+  <div class="panel left">
+    <div class="panel-title">📡 Sensor Data</div>
+
+    <div class="sensor-card" id="card-temp">
+      <div class="label">Temperature</div>
+      <div class="value" style="color:#ef4444"><span id="v-temp">--</span><span class="unit">°C</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-temp" style="width:0%;background:#ef4444"></div></div>
+    </div>
+
+    <div class="sensor-card" id="card-press">
+      <div class="label">Pressure</div>
+      <div class="value" style="color:#3b82f6"><span id="v-press">--</span><span class="unit">hPa</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-press" style="width:0%;background:#3b82f6"></div></div>
+    </div>
+
+    <div class="sensor-card" id="card-pos">
+      <div class="label">Position</div>
+      <div class="value" style="color:#10b981"><span id="v-pos">--</span><span class="unit">°</span></div>
+      <div class="bar-wrap"><div class="bar-fill" id="bar-pos" style="width:0%;background:#10b981"></div></div>
+    </div>
+
+    <div class="panel-title" style="margin-top:12px">📋 MQTT Log</div>
+    <div class="mqtt-log" id="mqtt-log"></div>
+  </div>
+
+  <!-- ── Center: 3D Viewport ── -->
+  <div class="viewport" id="viewport">
+    <div class="overlay">LMB Rotate · RMB Pan · Scroll Zoom</div>
+    <div class="fps" id="fps">-- FPS</div>
+  </div>
+
+  <!-- ── Right Panel: Controls ── -->
+  <div class="panel right">
+    <div class="panel-title">⚙️ Control Status</div>
+
+    <div class="ctrl-card">
+      <div class="label">DC Motor</div>
+      <div class="row">
+        <span class="val" id="dc-val">0 RPM</span>
+        <span class="tag idle" id="dc-tag">IDLE</span>
+      </div>
+    </div>
+
+    <div class="ctrl-card">
+      <div class="label">SG90 Servo</div>
+      <div class="row">
+        <span class="val" id="servo-val">90°</span>
+        <span class="tag auto" id="servo-tag">AUTO</span>
+      </div>
+    </div>
+
+    <div class="ctrl-card">
+      <div class="label">Stepper Motor</div>
+      <div class="row">
+        <span class="val" id="step-val">0 steps</span>
+        <span class="tag off" id="step-tag">OFF</span>
+      </div>
+    </div>
+
+    <div class="ctrl-card">
+      <div class="label">PID Controller</div>
+      <div class="row">
+        <span class="val" style="font-size:11px">Kp=2.0 Ki=0.5 Kd=1.0</span>
+        <span class="tag on" id="pid-tag">ACTIVE</span>
+      </div>
+    </div>
+
+    <div class="ctrl-card">
+      <div class="label">Mode</div>
+      <div class="row">
+        <span class="val" id="mode-val">Obstacle Avoidance</span>
+        <span class="tag auto">AUTO</span>
+      </div>
+    </div>
+
+    <div class="panel-title" style="margin-top:12px">📊 System</div>
+    <div class="ctrl-card">
+      <div class="row"><span style="color:var(--muted);font-size:12px">Uptime</span><span class="val" id="uptime" style="font-size:12px">00:00:00</span></div>
+      <div class="row"><span style="color:var(--muted);font-size:12px">MQTT Msg/s</span><span class="val" id="msg-rate" style="font-size:12px">0</span></div>
+      <div class="row"><span style="color:var(--muted);font-size:12px">Loop Hz</span><span class="val" style="font-size:12px">50</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ Three.js via importmap ═══════════ -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Scene Setup ──
+const container = document.getElementById('viewport');
+const W = () => container.clientWidth;
+const H = () => container.clientHeight;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W(), H());
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0e17);
+scene.fog = new THREE.FogExp2(0x0a0e17, 0.025);
+
+const camera = new THREE.PerspectiveCamera(45, W()/H(), 0.1, 200);
+camera.position.set(8, 6, 10);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.2, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.48;
+controls.update();
+
+// ── Lights ──
+const ambLight = new THREE.AmbientLight(0x334466, 0.6);
+scene.add(ambLight);
+
+const dirLight = new THREE.DirectionalLight(0xffeedd, 1.8);
+dirLight.position.set(8, 12, 6);
+dirLight.castShadow = true;
+dirLight.shadow.mapSize.set(1024, 1024);
+dirLight.shadow.camera.near = 1;
+dirLight.shadow.camera.far = 30;
+dirLight.shadow.camera.left = -8;
+dirLight.shadow.camera.right = 8;
+dirLight.shadow.camera.top = 8;
+dirLight.shadow.camera.bottom = -8;
+scene.add(dirLight);
+
+const ptLight1 = new THREE.PointLight(0x3b82f6, 1.5, 12);
+ptLight1.position.set(-3, 4, 2);
+scene.add(ptLight1);
+
+const ptLight2 = new THREE.PointLight(0x10b981, 1, 10);
+ptLight2.position.set(3, 3, -2);
+scene.add(ptLight2);
+
+// ── Ground Grid ──
+const gridHelper = new THREE.GridHelper(30, 30, 0x1a2a3a, 0x111d2b);
+scene.add(gridHelper);
+
+// Ground plane for shadow
+const groundGeo = new THREE.PlaneGeometry(30, 30);
+const groundMat = new THREE.MeshStandardMaterial({
+  color: 0x0a0e17, roughness: 1, metalness: 0
+});
+const ground = new THREE.Mesh(groundGeo, groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.01;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// ── Materials ──
+const matBase   = new THREE.MeshStandardMaterial({ color: 0x2a3a4e, roughness: 0.6, metalness: 0.3 });
+const matBody   = new THREE.MeshStandardMaterial({ color: 0x3b5998, roughness: 0.4, metalness: 0.6 });
+const matAccent = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.3, metalness: 0.7, emissive: 0x1a4080, emissiveIntensity: 0.3 });
+const matHot    = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5, metalness: 0.4, emissive: 0x661111, emissiveIntensity: 0.4 });
+const matGreen  = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4, metalness: 0.5, emissive: 0x0a4433, emissiveIntensity: 0.3 });
+const matPipe   = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.5, metalness: 0.7 });
+const matScreen = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.2, metalness: 0.1, emissive: 0x0d1f3c, emissiveIntensity: 0.5 });
+
+// ── Build Industrial Equipment Model ──
+const equipment = new THREE.Group();
+
+// Base platform
+const base = new THREE.Mesh(new THREE.BoxGeometry(5, 0.3, 3), matBase);
+base.position.y = 0.15;
+base.castShadow = true;
+base.receiveShadow = true;
+equipment.add(base);
+
+// Main body (cubic housing)
+const body = new THREE.Mesh(new THREE.BoxGeometry(2.5, 2.2, 1.8), matBody);
+body.position.set(-0.3, 1.4, 0);
+body.castShadow = true;
+equipment.add(body);
+
+// Top panel accent strip
+const topStrip = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 1.85), matAccent);
+topStrip.position.set(-0.3, 2.52, 0);
+equipment.add(topStrip);
+
+// Display screen on body
+const screen = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.7, 0.05), matScreen);
+screen.position.set(-0.3, 1.8, 0.92);
+equipment.add(screen);
+
+// Screen LED dots
+const ledGeo = new THREE.SphereGeometry(0.04, 8, 8);
+const led1 = new THREE.Mesh(ledGeo, new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x10b981, emissiveIntensity: 2 }));
+led1.position.set(-0.6, 1.55, 0.95);
+equipment.add(led1);
+const led2 = new THREE.Mesh(ledGeo, new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 2 }));
+led2.position.set(-0.3, 1.55, 0.95);
+equipment.add(led2);
+const led3 = new THREE.Mesh(ledGeo, new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x3b82f6, emissiveIntensity: 2 }));
+led3.position.set(0.0, 1.55, 0.95);
+equipment.add(led3);
+
+// Vertical cylindrical tank (right side)
+const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 2.8, 24), matBody);
+tank.position.set(1.8, 1.7, 0);
+tank.castShadow = true;
+equipment.add(tank);
+
+// Tank cap
+const tankCap = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.6, 0.15, 24), matAccent);
+tankCap.position.set(1.8, 3.15, 0);
+equipment.add(tankCap);
+
+// Tank bottom ring
+const tankRing = new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.05, 8, 24), matAccent);
+tankRing.rotation.x = Math.PI / 2;
+tankRing.position.set(1.8, 0.35, 0);
+equipment.add(tankRing);
+
+// Pressure gauge on tank (small cylinder + sphere)
+const gaugeBase = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.1, 16), matPipe);
+gaugeBase.position.set(1.8, 2.0, 0.65);
+equipment.add(gaugeBase);
+const gaugeFace = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16, 0, Math.PI*2, 0, Math.PI/2), matHot);
+gaugeFace.rotation.x = -Math.PI / 2;
+gaugeFace.position.set(1.8, 2.05, 0.65);
+equipment.add(gaugeFace);
+
+// Horizontal pipe connecting body to tank
+const pipe1 = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.6, 12), matPipe);
+pipe1.rotation.z = Math.PI / 2;
+pipe1.position.set(0.75, 1.4, 0.5);
+equipment.add(pipe1);
+
+// Second pipe lower
+const pipe2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.6, 12), matPipe);
+pipe2.rotation.z = Math.PI / 2;
+pipe2.position.set(0.75, 0.8, -0.4);
+equipment.add(pipe2);
+
+// Pipe elbow (sphere joints)
+const elbow1 = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), matPipe);
+elbow1.position.set(1.55, 1.4, 0.5);
+equipment.add(elbow1);
+const elbow2 = new THREE.Mesh(new THREE.SphereGeometry(0.10, 12, 12), matPipe);
+elbow2.position.set(1.55, 0.8, -0.4);
+equipment.add(elbow2);
+
+// DC Motor (cylinder on the left)
+const motorBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.8, 16), matGreen);
+motorBody.rotation.z = Math.PI / 2;
+motorBody.position.set(-2.0, 0.7, 0);
+motorBody.castShadow = true;
+equipment.add(motorBody);
+
+// Motor shaft
+const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), matPipe);
+shaft.rotation.z = Math.PI / 2;
+shaft.position.set(-2.6, 0.7, 0);
+equipment.add(shaft);
+
+// Motor mount bracket
+const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.1, 0.5), matBase);
+bracket.position.set(-2.0, 0.42, 0);
+equipment.add(bracket);
+
+// Servo motor (small box)
+const servo = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.35, 0.3), matAccent);
+servo.position.set(-2.0, 0.5, -1.0);
+servo.castShadow = true;
+equipment.add(servo);
+
+// Servo arm
+const servoArm = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.08), matPipe);
+servoArm.position.set(-2.0, 0.7, -1.0);
+servoArm.geometry.translate(0.2, 0, 0);
+equipment.add(servoArm);
+
+// Conduit / cable tray (on top of body)
+const conduit = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, 0.15), matPipe);
+conduit.position.set(-0.3, 2.56, 0.7);
+equipment.add(conduit);
+
+// Small vent on top
+const vent = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.12, 0.3), matBase);
+vent.position.set(0.5, 2.62, -0.4);
+equipment.add(vent);
+
+scene.add(equipment);
+
+// ── Sensor data state ──
+const state = {
+  temp: 25.0,
+  pressure: 1013.0,
+  position: 90,
+  dcRpm: 0,
+  servoAngle: 90,
+  stepperSteps: 0,
+  pidActive: true,
+  mode: 'obstacle_avoidance',
+  startTime: Date.now(),
+  msgCount: 0
+};
+
+// ── MQTT Simulation ──
+function simulateSensors() {
+  // Temperature: random walk around 25°C, range 15-85
+  state.temp += (Math.random() - 0.48) * 1.2;
+  state.temp = Math.max(15, Math.min(85, state.temp));
+
+  // Pressure: random walk around 1013 hPa, range 950-1080
+  state.pressure += (Math.random() - 0.498) * 2;
+  state.pressure = Math.max(950, Math.min(1080, state.pressure));
+
+  // Position: oscillating 0-180
+  state.position += (Math.random() - 0.5) * 8;
+  state.position = Math.max(0, Math.min(180, state.position));
+
+  // DC Motor RPM follows temperature delta
+  const targetRpm = Math.abs(state.temp - 25) * 15;
+  state.dcRpm += (targetRpm - state.dcRpm) * 0.1;
+  state.dcRpm = Math.max(0, Math.min(900, state.dcRpm));
+
+  // Servo follows position
+  state.servoAngle = Math.round(state.position);
+
+  // Stepper counts up slowly
+  if (state.dcRpm > 50) {
+    state.stepperSteps += Math.round(Math.random() * 5);
+  }
+
+  state.msgCount++;
+  updateUI();
+  addMqttLog();
+}
+
+function updateUI() {
+  // Sensor cards
+  document.getElementById('v-temp').textContent  = state.temp.toFixed(1);
+  document.getElementById('v-press').textContent = state.pressure.toFixed(0);
+  document.getElementById('v-pos').textContent   = state.position.toFixed(0);
+
+  // Progress bars (normalized)
+  const tempPct  = ((state.temp - 15) / 70 * 100).toFixed(0);
+  const pressPct = ((state.pressure - 950) / 130 * 100).toFixed(0);
+  const posPct   = (state.position / 180 * 100).toFixed(0);
+  document.getElementById('bar-temp').style.width  = tempPct + '%';
+  document.getElementById('bar-press').style.width = pressPct + '%';
+  document.getElementById('bar-pos').style.width   = posPct + '%';
+
+  // Control panel
+  document.getElementById('dc-val').textContent    = Math.round(state.dcRpm) + ' RPM';
+  document.getElementById('servo-val').textContent  = state.servoAngle + '°';
+  document.getElementById('step-val').textContent   = state.stepperSteps + ' steps';
+
+  // Tags
+  const dcTag = document.getElementById('dc-tag');
+  dcTag.textContent = state.dcRpm > 30 ? 'ON' : 'IDLE';
+  dcTag.className = 'tag ' + (state.dcRpm > 30 ? 'on' : 'idle');
+
+  const stepTag = document.getElementById('step-tag');
+  stepTag.textContent = state.dcRpm > 50 ? 'RUNNING' : 'OFF';
+  stepTag.className = 'tag ' + (state.dcRpm > 50 ? 'on' : 'off');
+
+  // PID
+  document.getElementById('pid-tag').textContent = state.pidActive ? 'ACTIVE' : 'OFF';
+  document.getElementById('pid-tag').className = 'tag ' + (state.pidActive ? 'on' : 'off');
+
+  // Mode
+  document.getElementById('mode-val').textContent = state.mode === 'obstacle_avoidance'
+    ? 'Obstacle Avoidance' : 'Smart Greenhouse';
+
+  // Uptime
+  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  const hh = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+  const mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+  const ss = String(elapsed % 60).padStart(2, '0');
+  document.getElementById('uptime').textContent = `${hh}:${mm}:${ss}`;
+
+  // Message rate
+  document.getElementById('msg-rate').textContent = Math.round(state.msgCount / Math.max(1, elapsed) * 100) / 100;
+}
+
+let logCount = 0;
+function addMqttLog() {
+  const el = document.getElementById('mqtt-log');
+  const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  const topics = ['sensors/temperature', 'sensors/pressure', 'sensors/position', 'actuators/dc_motor', 'system/heartbeat'];
+  const topic = topics[logCount % topics.length];
+  let payload;
+  switch (topic) {
+    case 'sensors/temperature': payload = `{"v":${state.temp.toFixed(1)}}`; break;
+    case 'sensors/pressure':   payload = `{"v":${state.pressure.toFixed(0)}}`; break;
+    case 'sensors/position':   payload = `{"v":${state.position.toFixed(0)}}`; break;
+    case 'actuators/dc_motor': payload = `{"rpm":${Math.round(state.dcRpm)}}`; break;
+    case 'system/heartbeat':   payload = `{"ts":${Date.now()}}`; break;
+  }
+  const line = document.createElement('div');
+  line.innerHTML = `<span class="t">${now}</span><span class="topic">${topic}</span> <span class="payload">${payload}</span>`;
+  el.appendChild(line);
+  logCount++;
+  // Keep last 50 lines
+  while (el.children.length > 50) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Animate 3D scene ──
+const servoArmRef = servoArm;
+const motorShaftRef = shaft;
+let prevTime = performance.now();
+let frameCount = 0;
+let fps = 0;
+
+function animate(time) {
+  requestAnimationFrame(animate);
+
+  const dt = (time - prevTime) / 1000;
+  prevTime = time;
+
+  // FPS counter
+  frameCount++;
+  if (frameCount % 30 === 0) {
+    fps = Math.round(1 / Math.max(dt, 0.001));
+    document.getElementById('fps').textContent = fps + ' FPS';
+  }
+
+  // Rotate servo arm based on position
+  servoArmRef.rotation.y = (state.position / 180) * Math.PI - Math.PI / 2;
+
+  // Spin motor shaft based on RPM
+  if (state.dcRpm > 10) {
+    motorShaftRef.rotation.x += (state.dcRpm / 60) * Math.PI * 2 * dt;
+  }
+
+  // Subtle LED blink
+  const blink = Math.sin(time * 0.003) * 0.5 + 0.5;
+  led1.material.emissiveIntensity = 1.5 + blink;
+  led2.material.emissiveIntensity = state.temp > 50 ? 2.5 : 0.3;
+  led3.material.emissiveIntensity = 1.5 + (1 - blink);
+
+  // Tank emissive based on pressure
+  const pressNorm = (state.pressure - 950) / 130;
+  tank.material.emissive = new THREE.Color(0x3b82f6);
+  tank.material.emissiveIntensity = pressNorm * 0.3;
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ── Resize ──
+window.addEventListener('resize', () => {
+  camera.aspect = W() / H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+});
+
+// ── Start ──
+animate(performance.now());
+setInterval(simulateSensors, 1000);
+simulateSensors();
+
+</script>
+</body>
+</html>
