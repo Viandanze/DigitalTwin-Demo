@@ -1,0 +1,434 @@
+/*
+ * responsive.css — Responsive Layout for Digital Twin Dashboard
+ * Breakpoints: Desktop (3-column) / Tablet (2-column) / Mobile (single-column)
+ *
+ * Layout structure:
+ *   ┌─────────────────────────────────────┐
+ *   │           Top Navigation            │
+ *   ├──────────┬──────────────┬───────────┤
+ *   │  Device  │              │   Alert   │
+ *   │  Panel   │  3D Scene    │   List    │
+ *   │  (left)  │  (center)    │  (right)  │
+ *   ├──────────┴──────────────┴───────────┤
+ *   │     Data Cards    │   Trend Chart   │
+ *   └─────────────────────────────────────┘
+ */
+
+/* ==================== Base Reset ==================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  height: 100%;
+  width: 100%;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0d0d1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a4e;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3a3a5e;
+}
+
+/* ==================== Desktop (default): 3-column layout ==================== */
+/* Min width: 1200px */
+
+@media (min-width: 1200px) {
+  .dashboard-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .dashboard-main {
+    flex-direction: row;
+  }
+
+  .panel-left {
+    width: 280px;
+  }
+
+  .panel-right {
+    width: 300px;
+  }
+
+  .dashboard-footer {
+    flex-direction: row;
+    height: 200px;
+  }
+
+  .data-cards-container .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .mobile-toggles {
+    display: none;
+  }
+}
+
+/* ==================== Tablet: 2-column layout ==================== */
+/* Width: 768px - 1199px */
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .dashboard-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  .dashboard-main {
+    flex-direction: row;
+  }
+
+  /* Narrower device panel */
+  .panel-left {
+    width: 220px;
+  }
+
+  /* Alert panel becomes overlay/drawer */
+  .panel-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 200;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Footer: 2-column */
+  .dashboard-footer {
+    flex-direction: row;
+    height: 180px;
+  }
+
+  .data-cards-container .cards-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Reduce header padding */
+  .dashboard-header {
+    padding: 0 12px;
+  }
+
+  .dashboard-title {
+    font-size: 16px;
+  }
+
+  /* Show mobile toggle for device panel */
+  .mobile-toggles {
+    display: flex;
+    position: absolute;
+    bottom: 210px;
+    left: 8px;
+    z-index: 150;
+  }
+
+  .toggle-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Scene overlay adjustments */
+  .device-detail-card {
+    min-width: 160px;
+    max-width: 200px;
+  }
+}
+
+/* ==================== Mobile: single-column layout ==================== */
+/* Max width: 767px */
+
+@media (max-width: 767px) {
+  .dashboard-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  }
+
+  /* Compact header */
+  .dashboard-header {
+    padding: 0 10px;
+    height: 48px;
+  }
+
+  .dashboard-title {
+    font-size: 14px;
+  }
+
+  .header-center {
+    display: none; /* Hide WS status on mobile to save space */
+  }
+
+  /* Main area: stack vertically */
+  .dashboard-main {
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Device panel: collapsible drawer from left */
+  .panel-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 240px;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  .panel-left:not(.collapsed) {
+    transform: translateX(0);
+  }
+
+  .panel-left.collapsed {
+    width: 240px; /* Keep width for transform animation */
+    margin-left: 0;
+  }
+
+  /* Center: full width */
+  .panel-center {
+    flex: 1;
+    width: 100%;
+  }
+
+  /* Alert panel: overlay from right */
+  .panel-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    z-index: 200;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Footer: stack data cards and chart vertically */
+  .dashboard-footer {
+    flex-direction: column;
+    height: 240px;
+    overflow-y: auto;
+  }
+
+  .dashboard-footer > * {
+    min-height: 120px;
+  }
+
+  /* Data cards: 2-column grid on mobile */
+  .data-cards-container .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .card-value {
+    font-size: 14px;
+  }
+
+  .card-label {
+    font-size: 9px;
+  }
+
+  /* Show toggle buttons on mobile */
+  .mobile-toggles {
+    display: flex;
+    position: absolute;
+    bottom: 250px;
+    left: 8px;
+    z-index: 150;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toggle-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Scene overlay adjustments */
+  .scene-overlay.top-left {
+    top: 8px;
+    left: 8px;
+    gap: 6px;
+  }
+
+  .overlay-item {
+    padding: 3px 6px;
+    min-width: 40px;
+  }
+
+  .overlay-label {
+    font-size: 8px;
+  }
+
+  .overlay-value {
+    font-size: 12px;
+  }
+
+  .device-detail-card {
+    min-width: 140px;
+    max-width: 180px;
+    padding: 8px 10px;
+  }
+
+  .detail-title {
+    font-size: 11px;
+  }
+
+  .hint-text {
+    display: none; /* Hide hint on mobile to save space */
+  }
+
+  /* Chart: smaller height */
+  .chart-canvas {
+    min-height: 80px;
+  }
+
+  /* Element Plus overrides for mobile */
+  .el-radio-group {
+    flex-wrap: wrap;
+  }
+
+  .el-radio-button__inner {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+  }
+}
+
+/* ==================== Small Mobile: extra compact ==================== */
+/* Max width: 380px */
+
+@media (max-width: 380px) {
+  .dashboard-title {
+    font-size: 12px;
+  }
+
+  .header-right .el-button {
+    padding: 6px;
+  }
+
+  /* Data cards: single column */
+  .data-cards-container .cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Device panel: full width drawer */
+  .panel-left {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  /* Hide detail card on very small screens */
+  .device-detail-card {
+    display: none;
+  }
+
+  /* Footer: shorter */
+  .dashboard-footer {
+    height: 200px;
+  }
+}
+
+/* ==================== Landscape orientation for mobile ==================== */
+
+@media (max-width: 1199px) and (orientation: landscape) and (max-height: 500px) {
+  .dashboard-footer {
+    height: 140px;
+  }
+
+  .dashboard-header {
+    height: 40px;
+  }
+
+  .dashboard-title {
+    font-size: 13px;
+  }
+}
+
+/* ==================== PWA display mode ==================== */
+
+@media (display-mode: standalone) {
+  /* When running as PWA, use safe areas */
+  .dashboard-header {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .dashboard-footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ==================== Print styles ==================== */
+
+@media print {
+  .dashboard-header,
+  .panel-left,
+  .panel-right,
+  .mobile-toggles,
+  .scene-overlay {
+    display: none;
+  }
+
+  .dashboard-container {
+    display: block;
+    height: auto;
+  }
+
+  .dashboard-main {
+    flex-direction: column;
+  }
+
+  .panel-center {
+    page-break-after: always;
+  }
+}
+
+/* ==================== Animation utilities ==================== */
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.slide-enter-from {
+  transform: translateX(-100%);
+}
+
+.slide-leave-to {
+  transform: translateX(-100%);
+}

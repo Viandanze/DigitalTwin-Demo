@@ -1,0 +1,21 @@
+{
+  "name": "Digital Twin Dashboard",
+  "short_name": "DT Dashboard",
+  "description": "Real-time digital twin 3D visualization and device monitoring",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "en",
+  "scope": "/"
+}
