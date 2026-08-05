@@ -27,8 +27,8 @@ Industrial equipment digital twin system with real-time sensor data acquisition,
 LLM-Agent-DigitalTwin/
 ├── src/
 │   ├── Arduino/                    # Arduino firmware
-│   ├── sensor_acquisition/         # Sensor data collection
-│   ├── serial_comm/                # Serial communication
+│   ├── sensor_collection/          # Sensor data collection
+│   ├── serial_communication/      # Serial communication
 │   ├── cloud_sync/                 # MQTT client
 │   ├── actuator_integration/       # PID controller
 │   ├── motor_control/              # Motor drivers
@@ -37,9 +37,9 @@ LLM-Agent-DigitalTwin/
 │   ├── mqtt_simulator/             # MQTT simulator (no hardware needed)
 │   ├── frontend/
 │   │   └── simple_viewer.html      # Three.js 3D visualization
-│   ├── 系统联调/                    # System integration modules
-│   ├── 执行器集成/                  # Actuator Three.js extensions
-│   └── 云端同步/                    # Cloud sync extensions
+│   ├── system_integration/        # System integration modules
+│   ├── actuator_integration/      # Actuator & Three.js extensions
+│   └── cloud_sync/                # Cloud sync extensions
 └── README.md
 ```
 
