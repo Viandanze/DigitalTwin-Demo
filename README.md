@@ -1,4 +1,4 @@
-# DigitalTwin-Demo
+# LLM-Agent-DigitalTwin
 
 Industrial equipment digital twin system with real-time sensor data acquisition, MQTT communication, 3D visualization, PID closed-loop control, and LLM Agent integration.
 
@@ -24,7 +24,7 @@ Industrial equipment digital twin system with real-time sensor data acquisition,
 ## Project Structure
 
 ```
-DigitalTwin-Demo/
+LLM-Agent-DigitalTwin/
 ├── src/
 │   ├── Arduino/                    # Arduino firmware
 │   ├── sensor_acquisition/         # Sensor data collection
